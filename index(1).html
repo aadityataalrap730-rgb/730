@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0704">
+<meta name="description" content="The Hungry Birds — scan, preview food in 3D, and place a life-size dish on your table with AR.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="Permissions-Policy" content="camera=(self), xr-spatial-tracking=(self)">
+<title>The Hungry Birds — AR Restaurant Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#090704;
+  --bg2:#120d08;
+  --panel:#16110c;
+  --panel2:#1c1510;
+  --line:#3a2c1d;
+  --text:#fff8ee;
+  --muted:#cbb9a3;
+  --orange:#ff8a00;
+  --amber:#ffc247;
+  --peach:#ffd9a0;
+  --green:#7ae0a1;
+  --red:#ff6b4a;
+  --shadow:0 30px 80px #00000088;
+  --radius:28px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  color:var(--text);
+  font-family:Manrope,ui-sans-serif,system-ui,sans-serif;
+  background:
+    radial-gradient(900px 500px at 12% -10%, #5a2a0618 0%, transparent 55%),
+    radial-gradient(700px 420px at 100% 8%, #ff8a0010 0%, transparent 46%),
+    radial-gradient(800px 600px at 50% 120%, #2a1608 0%, transparent 50%),
+    var(--bg);
+  overflow-x:hidden;
+}
+body.locked{overflow:hidden}
+h1,h2,h3,.brand,.display{font-family:Syne,Manrope,sans-serif}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+.container{width:min(1180px,92%);margin:auto}
+
+.orb{position:fixed;pointer-events:none;z-index:0;filter:blur(40px);opacity:.45;animation:drift 18s ease-in-out infinite}
+.orb.a{width:280px;height:280px;left:-60px;top:120px;background:#ff8a0033;border-radius:50%}
+.orb.b{width:220px;height:220px;right:-40px;top:40%;background:#ffc24722;border-radius:50%;animation-delay:-7s}
+.orb.c{width:180px;height:180px;left:30%;bottom:8%;background:#7ae0a118;border-radius:50%;animation-delay:-12s}
+@keyframes drift{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(20px,-24px,0) scale(1.08)}}
+
+.nav{
+  height:78px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid #ffffff10;position:sticky;top:0;z-index:12;
+  background:#090704cc;backdrop-filter:blur(16px);
+}
+.brand{font-weight:800;letter-spacing:.14em;font-size:13px}
+.brand b{color:var(--orange)}
+.navlinks{display:flex;gap:22px;align-items:center;color:#c9b8a3;font-size:12px;font-weight:700;letter-spacing:.08em}
+.navlinks a{position:relative;padding:6px 0}
+.navlinks a:after{content:"";position:absolute;left:0;bottom:-4px;height:2px;width:0;background:var(--orange);transition:.25s}
+.navlinks a:hover{color:#fff}
+.navlinks a:hover:after{width:100%}
+.ar-chip{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
+  border:1px solid #ffffff18;background:#ffffff08;font-size:11px;letter-spacing:.08em;color:#ffd9a0
+}
+.ar-chip .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 #7ae0a180;animation:pulse 1.8s infinite}
+.ar-chip.warn .pulse{background:#ffb020;box-shadow:0 0 0 0 #ffb02080}
+.ar-chip.bad .pulse{background:#ff6b4a;box-shadow:0 0 0 0 #ff6b4a80}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+.hero{padding:72px 0 36px;text-align:center;position:relative;z-index:1}
+.eyebrow{
+  display:inline-flex;gap:8px;align-items:center;padding:8px 14px;border-radius:999px;
+  border:1px solid #ffffff1a;background:#ffffff08;color:#ffc56b;font-size:11px;font-weight:800;
+  letter-spacing:.18em;text-transform:uppercase;animation:rise .8s ease both
+}
+.dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 14px var(--green)}
+h1{
+  font-size:clamp(46px,8.2vw,92px);line-height:.9;letter-spacing:-.06em;margin:22px auto 18px;max-width:920px;
+  animation:rise .9s .08s ease both
+}
+h1 em{font-style:normal;background:linear-gradient(90deg,#fff 10%,#ffc247 48%,#ff8a00);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{max-width:680px;margin:auto;color:var(--muted);font-size:17px;line-height:1.7;animation:rise .9s .16s ease both}
+.hero-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:28px;animation:rise .9s .24s ease both}
+.btn{
+  border:0;border-radius:999px;padding:14px 20px;font-weight:800;transition:.22s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden
+}
+.btn.primary{background:#fff;color:#111}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px #ffc24733}
+.btn.dark{background:#1a140f;border:1px solid #3d2f20;color:#fff}
+.btn.dark:hover{border-color:#7a5a32;transform:translateY(-2px)}
+.btn.ar{
+  background:linear-gradient(135deg,#fff,#ffe0a8);color:#1a1006;
+  box-shadow:0 8px 24px #ff8a0030
+}
+.btn.ar:hover{transform:translateY(-2px) scale(1.02)}
+.btn[disabled]{opacity:.55;cursor:not-allowed;transform:none}
+
+.hero-stage{
+  margin:42px auto 0;width:min(760px,100%);height:420px;position:relative;
+  animation:rise 1s .3s ease both
+}
+.hero-stage model-viewer{
+  width:100%;height:100%;background:transparent;--poster-color:transparent
+}
+.float-badge{
+  position:absolute;z-index:2;padding:10px 14px;border-radius:16px;
+  background:#130e0acc;border:1px solid #ffffff14;backdrop-filter:blur(10px);
+  font-size:12px;font-weight:700;animation:floaty 5s ease-in-out infinite
+}
+.float-badge.l{left:8px;top:46px}
+.float-badge.r{right:8px;bottom:54px;animation-delay:-2.4s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+.section{padding:28px 0 80px;position:relative;z-index:1}
+.kicker{color:var(--orange);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase}
+.section-title{font-size:clamp(28px,4vw,42px);letter-spacing:-.04em;margin:8px 0}
+.section-sub{color:#b39f88;margin:0}
+
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:28px}
+.step{
+  background:linear-gradient(180deg,#1b140f,#110d0a);border:1px solid var(--line);
+  border-radius:22px;padding:22px 16px;text-align:center;min-height:150px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:.3s;animation:rise .7s ease both
+}
+.step:nth-child(2){animation-delay:.08s}
+.step:nth-child(3){animation-delay:.16s}
+.step:nth-child(4){animation-delay:.24s}
+.step:nth-child(5){animation-delay:.32s}
+.step:hover{transform:translateY(-6px);border-color:#7a5a32}
+.step .emoji{font-size:30px;margin-bottom:10px}
+.step strong{font-size:14px}
+.step small{color:#8d7a66;margin-top:6px;font-size:12px}
+.step.hot{border-color:#69420d;box-shadow:inset 0 0 40px #ff8a0012}
+
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:30px}
+.food-card{
+  position:relative;overflow:hidden;border:1px solid var(--line);border-radius:30px;
+  background:linear-gradient(160deg,#1a140f,#0e0b08);box-shadow:var(--shadow);
+  min-height:560px;padding:22px;display:flex;flex-direction:column
+}
+.food-card:before{
+  content:"";position:absolute;width:260px;height:260px;right:-80px;top:-90px;
+  background:#ff8a0018;border-radius:50%;filter:blur(18px)
+}
+.food-card.burger:before{background:#ffc24714}
+.viewer-card{
+  height:280px;border-radius:22px;overflow:hidden;background:#0c0a08;
+  border:1px solid #2a2118;margin-bottom:16px
+}
+.viewer-card model-viewer{width:100%;height:100%;--poster-color:transparent}
+.food-card h3{font-size:34px;letter-spacing:-.04em;margin:4px 0 0}
+.food-card p{color:#b7a28b;line-height:1.6;margin:8px 0 14px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:11px;color:#d8c4aa;border:1px solid #3a2f24;padding:6px 10px;border-radius:999px;background:#ffffff06}
+.price{font-size:26px;font-weight:800;margin-top:auto;padding-top:16px}
+.card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+.qr-section{
+  border:1px solid var(--line);border-radius:30px;background:linear-gradient(135deg,#19130e,#0d0b08);
+  padding:34px;display:grid;grid-template-columns:1fr 240px;gap:35px;align-items:center
+}
+.qr-copy h2{font-size:36px;letter-spacing:-.05em;margin:8px 0 12px}
+.qr-copy p{color:#b39f88;line-height:1.65;max-width:650px}
+.qr-box{background:#fff;padding:14px;border-radius:20px;width:210px;height:210px;display:flex;align-items:center;justify-content:center;margin:auto}
+.qr-box img,.qr-box canvas{width:182px!important;height:182px!important}
+.qr-note{font-size:11px;color:#8a7560;margin-top:12px;text-align:center;word-break:break-all}
+
+.help{
+  margin-top:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px
+}
+.help article{
+  background:#140f0b;border:1px solid #2e241b;border-radius:20px;padding:18px
+}
+.help h3{margin:0 0 8px;font-size:16px}
+.help p{margin:0;color:#b39f88;font-size:13px;line-height:1.6}
+
+.footer{border-top:1px solid #ffffff0e;padding:28px 0 45px;color:#8a7560;font-size:12px;display:flex;justify-content:space-between;gap:15px}
+
+.modal{position:fixed;inset:0;background:#000000d0;backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:18px;z-index:30}
+.modal.open{display:flex;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal-card{
+  width:min(980px,100%);background:#120e0b;border:1px solid #3a2c1d;border-radius:28px;overflow:hidden;
+  box-shadow:0 40px 120px #000;transform:translateY(12px);animation:pop .28s ease forwards
+}
+@keyframes pop{to{transform:none}}
+.modal-top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #2a2118;gap:12px}
+.modal-title{font-weight:800;font-size:18px}
+.modal-tools{display:flex;gap:8px;align-items:center}
+.close,.icon-btn{width:38px;height:38px;border-radius:50%;border:1px solid #3a2c1d;background:#1a140f;color:#fff;font-size:18px}
+.viewer-wrap{position:relative;padding:12px}
+.viewer-wrap model-viewer{
+  width:100%;height:min(64vh,580px);min-height:390px;border-radius:22px;
+  background:radial-gradient(circle at 50% 42%,#2a2118,#0c0a08 72%);
+  --poster-color:transparent;--progress-bar-color:var(--orange)
+}
+.viewer-hint,.ar-status{
+  position:absolute;top:26px;left:26px;background:#00000099;border:1px solid #ffffff14;
+  color:#ddd;border-radius:999px;padding:8px 12px;font-size:11px;z-index:2;font-weight:700
+}
+.ar-status{left:auto;right:26px;max-width:220px}
+.launch-ar{
+  position:absolute;left:50%;bottom:28px;transform:translateX(-50%);
+  background:#fff;color:#111;border:0;border-radius:999px;padding:13px 18px;font-weight:800;z-index:3
+}
+.modal-foot{padding:0 20px 18px;color:#b39f88;font-size:13px;line-height:1.55;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tips{display:flex;gap:8px;flex-wrap:wrap}
+.tips span{border:1px solid #3a2c1d;border-radius:999px;padding:6px 10px;font-size:11px;color:#d8c4aa}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:#fff;color:#111;padding:12px 16px;border-radius:999px;font-weight:800;font-size:12px;z-index:50;transition:.25s
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.banner{
+  display:none;margin:0 auto 8px;width:min(1180px,92%);padding:10px 14px;border-radius:14px;
+  background:#3a2208;border:1px solid #7a4a12;color:#ffd9a0;font-size:13px
+}
+.banner.show{display:block}
+
+@media(max-width:860px){
+  .navlinks a:not(.ar-chip){display:none}
+  .hero{padding:54px 0 28px}
+  .hero-stage{height:300px}
+  .steps,.help,.cards,.qr-section{grid-template-columns:1fr}
+  .food-card{min-height:auto}
+  .footer{flex-direction:column;text-align:center}
+  .viewer-wrap model-viewer{min-height:360px;height:58vh}
+}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
+
+<header class="container nav">
+  <a class="brand" href="#top">HUNGRY <b>BIRDS</b></a>
+  <div class="navlinks">
+    <a href="#flow">HOW IT WORKS</a>
+    <a href="#menu">MENU</a>
+    <a href="#qr">QR CODE</a>
+    <span class="ar-chip" id="arChip"><span class="pulse"></span><span id="arChipText">Checking AR…</span></span>
+  </div>
+</header>
+
+<div class="banner" id="httpsBanner">AR needs a secure link (https) and a phone camera. Open this page on your phone after publishing, then tap Place on table.</div>
+
+<main id="top">
+  <section class="container hero">
+    <div class="eyebrow"><span class="dot"></span> QR • 3D • TABLETOP AR</div>
+    <h1>See dinner <em>on your table</em> before you order.</h1>
+    <p>Scan the restaurant QR, spin a real-size 3D dish, then place it in your camera so the food sits on the table in front of you.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#menu">Open the menu</a>
+      <a class="btn dark" href="#flow">How AR works</a>
+    </div>
+    <div class="hero-stage">
+      <div class="float-badge l">Life-size preview</div>
+      <div class="float-badge r">Works on phone camera</div>
+      <model-viewer
+        id="heroViewer"
+        src="colored_pizza.glb"
+        poster="pizza-poster.jpg"
+        alt="Margherita pizza rotating in 3D"
+        camera-controls
+        touch-action="pan-y"
+        auto-rotate
+        rotation-per-second="18deg"
+        shadow-intensity="0.85"
+        shadow-softness="0.9"
+        exposure="1.05"
+        environment-image="neutral"
+        camera-orbit="25deg 68deg 0.55m"
+        field-of-view="24deg"
+        camera-target="0m 0.02m 0m"
+        min-camera-orbit="auto 55deg auto"
+        max-camera-orbit="auto 85deg auto"
+        interaction-prompt="none"
+        loading="eager">
+      </model-viewer>
+    </div>
+  </section>
+
+  <section class="container section" id="flow">
+    <div class="kicker">Customer journey</div>
+    <h2 class="section-title">From QR code to food on the table</h2>
+    <p class="section-sub">Built for a real restaurant table, not just a spinning model on a website.</p>
+    <div class="steps">
+      <article class="step"><div class="emoji">🍽️</div><strong>Printed menu / table tent</strong><small>QR on every table</small></article>
+      <article class="step hot"><div class="emoji">📱</div><strong>Scan with camera</strong><small>No app install</small></article>
+      <article class="step"><div class="emoji">🌐</div><strong>Open this page</strong><small>Pick a dish</small></article>
+      <article class="step"><div class="emoji">🔄</div><strong>Inspect in 3D</strong><small>Drag, zoom, rotate</small></article>
+      <article class="step hot"><div class="emoji">📷</div><strong>Place in AR</strong><small>Life-size on the table</small></article>
+    </div>
+  </section>
+
+  <section class="container section" id="menu">
+    <div class="kicker">Restaurant menu</div>
+    <h2 class="section-title">Tap a dish, then put it on the table</h2>
+    <p class="section-sub">Each card already shows the real 3D model. AR uses a corrected real-world size so a pizza is pizza-sized, not room-sized.</p>
+    <div class="cards">
+      <article class="food-card">
+        <div class="viewer-card">
+          <model-viewer
+            src="colored_pizza.glb"
+            poster="pizza-poster.jpg"
+            alt="Margherita Pizza 3D preview"
+            camera-controls
+            touch-action="pan-y"
+            auto-rotate
+            rotation-per-second="16deg"
+            shadow-intensity="0.9"
+            exposure="1.05"
+            environment-image="neutral"
+            camera-orbit="-20deg 65deg 0.5m"
+            field-of-view="24deg"
+            camera-target="0m 0.02m 0m"
+            interaction-prompt="none">
+          </model-viewer>
+        </div>
+        <h3>Margherita Pizza</h3>
+        <p>Tomato, mozzarella and herbs. Turn it in 3D, then place an 8-inch pie on your table with the camera.</p>
+        <div class="meta"><span class="pill">8 inch</span><span class="pill">Vegetarian</span><span class="pill">Wood-fired look</span></div>
+        <div class="price">₹299</div>
+        <div class="card-actions">
+          <a class="btn ar" href="ar.html?dish=pizza">Place on my table</a>
+          <button class="btn dark" onclick="openStudio('pizza')">View in 3D</button>
+        </div>
+      </article>
+
+      <article class="food-card burger">
+        <div class="viewer-card">
+          <model-viewer
+            src="burger.glb"
+            poster="burger-poster.jpg"
+            alt="Classic Burger 3D preview"
+            camera-controls
+            touch-action="pan-y"
+            auto-rotate
+            rotation-per-second="14deg"
+            shadow-intensity="1"
+            exposure="1.1"
+            environment-image="neutral"
+            camera-orbit="30deg 72deg 0.38m"
+            field-of-view="22deg"
+            camera-target="0m 0.04m 0m"
+            interaction-prompt="none">
+          </model-viewer>
+        </div>
+        <h3>Classic Burger</h3>
+        <p>Stacked bun, grilled patty, cheese, lettuce and tomato. The model is scaled to a real burger so AR looks natural.</p>
+        <div class="meta"><span class="pill">Classic</span><span class="pill">Cheesy</span><span class="pill">Sesame bun</span></div>
+        <div class="price">₹249</div>
+        <div class="card-actions">
+          <a class="btn ar" href="ar.html?dish=burger">Place on my table</a>
+          <button class="btn dark" onclick="openStudio('burger')">View in 3D</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="container section" id="qr">
+    <div class="qr-section">
+      <div class="qr-copy">
+        <div class="kicker">Restaurant QR</div>
+        <h2>Put this QR on every table.</h2>
+        <p>Guests scan it and land on this menu. The code always points at the current page address, so print it after you publish the site on GitHub Pages or your own domain. AR needs that live https link.</p>
+        <div class="hero-actions" style="justify-content:flex-start;margin-top:18px">
+          <button class="btn dark" onclick="copyLink()">Copy menu link</button>
+          <a class="btn dark" href="ar.html?dish=pizza">Try pizza AR</a>
+        </div>
+      </div>
+      <div>
+        <div class="qr-box" id="qrcode"></div>
+        <div class="qr-note" id="qrNote">Menu QR code</div>
+      </div>
+    </div>
+
+    <div class="help">
+      <article>
+        <h3>Phone + https</h3>
+        <p>Use Chrome on Android or Safari on iPhone. The page must be opened from a website address, not a downloaded file.</p>
+      </article>
+      <article>
+        <h3>Give camera permission</h3>
+        <p>Tap Place on my table, allow the camera, then TAP the table when the ring appears. The dish should already sit in front of the camera.</p>
+      </article>
+      <article>
+        <h3>Life-size models</h3>
+        <p>The pizza is about 22 cm wide and the burger about 13 cm. If a dish looks huge, you are still on an old model file.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="container footer">
+  <div>© 2026 The Hungry Birds Food Zone</div>
+  <div>QR Menu • Real-size 3D • Tabletop AR</div>
+</footer>
+
+<div class="modal" id="arModal" role="dialog" aria-modal="true" aria-label="AR food studio">
+  <div class="modal-card">
+    <div class="modal-top">
+      <div class="modal-title" id="modalTitle">3D Food</div>
+      <div class="modal-tools">
+        <button class="icon-btn" id="rotateBtn" title="Toggle spin" onclick="toggleSpin()">↻</button>
+        <button class="close" onclick="closeStudio()" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="viewer-wrap">
+      <div class="viewer-hint">Drag to turn • Pinch to zoom</div>
+      <div class="ar-status" id="arStatus">Preparing AR…</div>
+      <model-viewer
+        id="studioViewer"
+        src=""
+        alt="3D food"
+        camera-controls
+        touch-action="pan-y"
+        auto-rotate
+        rotation-per-second="20deg"
+        shadow-intensity="1"
+        shadow-softness="0.75"
+        exposure="1.08"
+        environment-image="neutral"
+        interaction-prompt="none"
+        loading="eager">
+      </model-viewer>
+    </div>
+    <div class="modal-foot">
+      <div id="arHelp">This window is the 3D preview. Use <b>Place on my table</b> on the menu card to open the camera page.</div>
+      <div class="tips">
+        <span>Floor / table surface</span>
+        <span>Fixed real-world size</span>
+        <span>No extra app</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MENU = {
+  pizza: {
+    name: 'Margherita Pizza',
+    file: 'colored_pizza.glb',
+    poster: 'pizza-poster.jpg',
+    orbit: '-18deg 64deg 0.55m',
+    target: '0m 0.02m 0m',
+    fov: '24deg'
+  },
+  burger: {
+    name: 'Classic Burger',
+    file: 'burger.glb',
+    poster: 'burger-poster.jpg',
+    orbit: '28deg 72deg 0.4m',
+    target: '0m 0.035m 0m',
+    fov: '22deg'
+  }
+};
+
+const modal = document.getElementById('arModal');
+const viewer = document.getElementById('studioViewer');
+const title = document.getElementById('modalTitle');
+const statusEl = document.getElementById('arStatus');
+const helpEl = document.getElementById('arHelp');
+const chip = document.getElementById('arChip');
+const chipText = document.getElementById('arChipText');
+const httpsBanner = document.getElementById('httpsBanner');
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const isLocalFile = location.protocol === 'file:';
+const isLoopback = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '[::1]';
+
+function assetURL(file){
+  try { return new URL(file, location.href).href; }
+  catch { return file; }
+}
+
+function setChip(state, text){
+  chip.classList.remove('warn','bad');
+  if (state) chip.classList.add(state);
+  chipText.textContent = text;
+}
+
+async function detectAR(){
+  if (isLocalFile) {
+    httpsBanner.classList.add('show');
+    setChip('warn', 'Publish to use AR');
+    helpEl.innerHTML = 'Open this folder through a website address, not as a saved file. Upload it to GitHub Pages or any https host, then scan the QR on your phone.';
+    return;
+  }
+  if (!isSecure && !isLoopback) {
+    httpsBanner.classList.add('show');
+    setChip('warn', 'Needs https for AR');
+    helpEl.innerHTML = 'Camera AR needs a secure https link. Publish the site, then open it on a phone.';
+    return;
+  }
+  if (isLoopback && location.protocol !== 'https:') {
+    setChip('warn', '3D ready • AR on phone');
+    helpEl.innerHTML = 'Local preview is great for 3D. For the camera table view, publish this folder to https and open the link on a phone.';
+  }
+  let webxr = false;
+  try {
+    webxr = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar'));
+  } catch {}
+  if (webxr) {
+    setChip('', 'AR ready');
+    helpEl.innerHTML = 'WebXR is available. Tap <b>Place on my table</b>, allow the camera, and look at a flat table until the dish drops in.';
+    statusEl.textContent = 'WebXR camera AR ready';
+    return;
+  }
+  if (isAndroid) {
+    setChip('', 'Android AR ready');
+    helpEl.innerHTML = 'On Android this uses Scene Viewer. Tap <b>Place on my table</b>, then move the phone around the table and tap to place.';
+    statusEl.textContent = 'Scene Viewer ready';
+    return;
+  }
+  if (isIOS) {
+    setChip('warn', 'iPhone AR limited');
+    helpEl.innerHTML = 'You can still inspect the 3D dish here. For the camera walkaround, use an Android phone with Chrome if Quick Look does not appear.';
+    statusEl.textContent = '3D ready • camera AR may vary';
+    return;
+  }
+  setChip('warn', 'Use a phone for AR');
+  helpEl.innerHTML = 'Desktop can rotate and zoom the model. Open the same link on your phone to place the food on a real table.';
+  statusEl.textContent = '3D preview • AR on phone';
+}
+
+function openStudio(kind){
+  const item = MENU[kind];
+  if (!item) return;
+  title.textContent = item.name;
+  viewer.setAttribute('poster', item.poster);
+  viewer.setAttribute('camera-orbit', item.orbit);
+  viewer.setAttribute('camera-target', item.target);
+  viewer.setAttribute('field-of-view', item.fov);
+  viewer.alt = item.name;
+  viewer.src = assetURL(item.file);
+  viewer.setAttribute('auto-rotate', '');
+  modal.classList.add('open');
+  document.body.classList.add('locked');
+  statusEl.textContent = 'Loading 3D model…';
+}
+
+function closeStudio(){
+  modal.classList.remove('open');
+  document.body.classList.remove('locked');
+  try { if (viewer.exitAR) viewer.exitAR(); } catch {}
+}
+
+function toggleSpin(){
+  if (viewer.hasAttribute('auto-rotate')) viewer.removeAttribute('auto-rotate');
+  else viewer.setAttribute('auto-rotate', '');
+}
+
+modal.addEventListener('click', e => { if (e.target === modal) closeStudio(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStudio(); });
+viewer.addEventListener('camera-change', () => viewer.removeAttribute('auto-rotate'));
+
+viewer.addEventListener('load', () => {
+  statusEl.textContent = isAndroid || isSecure ? 'Model ready • tap Place on my table' : 'Model ready';
+});
+viewer.addEventListener('error', () => {
+  statusEl.textContent = 'Model failed to load';
+  showToast('Could not load the 3D file. Keep the .glb next to index.html');
+});
+viewer.addEventListener('ar-status', ev => {
+  const s = ev.detail && ev.detail.status;
+  const map = {
+    'not-presenting': 'AR ready',
+    'session-started': 'Move the phone over the table…',
+    'object-placed': 'Placed. Walk around it!',
+    'failed': 'AR failed. Use https on a phone and allow camera.'
+  };
+  statusEl.textContent = map[s] || ('AR: ' + s);
+  if (s === 'failed') {
+    setChip('bad', 'AR failed');
+    showToast('AR could not start. Open this site on a phone over https.');
+  }
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function copyLink(){
+  const link = location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(() => showToast('Menu link copied')).catch(fallbackCopy);
+  } else fallbackCopy();
+  function fallbackCopy(){
+    showToast(link);
+  }
+}
+
+function makeQR(){
+  const box = document.getElementById('qrcode');
+  box.innerHTML = '';
+  const text = location.href;
+  if (window.QRCode) {
+    new QRCode(box, {
+      text,
+      width: 182,
+      height: 182,
+      colorDark: '#1a1006',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+  document.getElementById('qrNote').textContent =
+    text.startsWith('http') ? text : 'Publish the site first, then print this QR';
+}
+
+makeQR();
+detectAR();
+
+customElements.whenDefined('model-viewer').then(() => {
+  document.querySelectorAll('model-viewer').forEach(mv => {
+    mv.addEventListener('error', () => console.warn('model-viewer error', mv.src));
+  });
+});
+</script>
+</body>
+</html>
